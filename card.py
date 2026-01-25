@@ -17,7 +17,7 @@ class Card:
 
     def __str__(self):
         if self.discarded:
-            return " D"
+            return "D"
         if self.revealed:
             return f"{self.value:>2}"
-        return " X"
+        return "X"
