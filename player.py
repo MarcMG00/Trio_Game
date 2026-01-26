@@ -15,12 +15,16 @@ class Player:
     # Reveal Card (show the lower:1 or the higher:2)
     def reveal_card(self, position_card: int):
         # Filters Cards not discarded
-        available_cards = [c for c in self.cards if not c.discarded]
-
+        available_cards = [c for c in self.cards if not c.discarded and not c.revealed]
+        card = None
         if position_card == 1:
-            available_cards[-1].reveal()
+            card = available_cards[0]
+            card.reveal()
         else:
-            available_cards[0].reveal()
+            card = available_cards[-1]
+            card.reveal()
+        
+        return card
 
     # Reorder Cards in ascending order
     def reorder_cards(self):
@@ -28,12 +32,10 @@ class Player:
 
     # Show own Cards to player
     def display_own_cards(self):
-        print("Cartas : ")
-
         # Filters Cards not discarded
         available_cards = [c for c in self.cards if not c.discarded]
         for card in available_cards:
-            card.reveal
+            card.reveal()
 
         print(" | ".join(str(card.value) for card in available_cards))
 
@@ -41,8 +43,14 @@ class Player:
     def hide_own_cards(self):
         # Filters Cards not discarded
         available_cards = [c for c in self.cards if not c.discarded]
-        available_cards = [c.hide for c in available_cards]
+        for card in available_cards:
+            card.hide()
 
-        row_str = " | ".join(str(card.value) for card in available_cards)
-        print(f"{row_str}")
+    # Display the Cards (to show to other players)
+    def display(self):
+        print(f"\nJugador {self.number}")
+        # Filters Cards not discarded
+        available_cards = [c for c in self.cards if not c.discarded]
+
+        print(" | ".join(str(card) for card in available_cards))
         

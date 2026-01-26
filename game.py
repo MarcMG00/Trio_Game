@@ -56,10 +56,15 @@ class Game:
         print(f"\nTurno del Jugador {current_player.number}")
 
         # Show Cards of current player
+        print("Cartas :")
         current_player.display_own_cards()
 
         # Continue turn until 2-3 Cards are not the same
         while True:
+            print("------------Start------------")
+            # Show other player's Cards
+            self.display()
+
             print("\nElige una acción :")
             print("1 - Girar una carta del centro")
             print("2 - Pedir una carta a otro jugador")
@@ -70,11 +75,14 @@ class Game:
             if choice == "1":
                 self.flip_card_on_table()
             elif choice == "2":
-                print("2 - TODO")
+                self.ask_card_another_player(current_player)
             elif choice == "3":
                 print("3 - TODO")
             else:
                 print("Opción inválida.")
+
+            # Show other player's Cards (to show new Card revealed if a player was asked)
+            self.display()
 
             # Check if current Cards revealed allows to player to get a Trio
             self.player_got_trio(current_player)
@@ -82,8 +90,13 @@ class Game:
             # Turn ends if current player hasn't got same numbers when choosing OR if has scored
             if self.has_same_numbers(current_player) is False or current_player.has_scored_current_turn:
                 self.hide_cards_on_table()
+                self.hide_players_cards()
+                self.numbers_revealed_on_current_turn = []
                 break
 
+        print("------------End------------")
+        # Hide current player Cards
+        current_player.hide_own_cards()
         # Next player
         self.next_player()
 
@@ -106,6 +119,53 @@ class Game:
         print(f"{row_str}")
 
         return
+    
+    # Option 2 - Ask a Card to another player
+    def ask_card_another_player(self, current_player):
+        print(f"Elige un jugador a quien pedir una carta :")
+        
+        player_to_ask = self.get_player(current_player)
+
+        print(f"1 - Carta menos alta | 2 - Carta más alta : ")
+        option = int(input("Opción : "))
+
+        # Reveal Card from player chosen
+        self.reveal_card_other_player(player_to_ask, option)
+
+        return
+    
+    # Get player to ask a Card
+    def get_player(self, current_player):
+        # Show players available
+        for p in self.players:
+            if p != current_player:
+                print(f"Jugador {p.number}")
+
+        while True:
+            try:
+                player_number = int(input("Jugador : "))
+
+                # Search for player with this number
+                target_player = next((p for p in self.players if p.number == player_number), None)
+
+                if target_player is None:
+                    print("Jugador inexistente.")
+                    continue
+
+                if target_player == current_player:
+                    print("No puedes elegirte a ti mismo.")
+                    continue
+
+                return target_player
+
+            except ValueError:
+                print("Entrada inválida. Introduce un número.")
+
+    # Reveal a card from player chosen
+    def reveal_card_other_player(self, player_to_ask, option):
+        card_revealed = player_to_ask.reveal_card(option)
+        # Put value from card revealed on list to compare
+        self.numbers_revealed_on_current_turn.append(card_revealed.value)
 
     # Check if numbers revealed during current turn are the same
     def has_same_numbers(self, player) -> bool:
@@ -161,4 +221,20 @@ class Game:
     def hide_cards_on_table(self):
         for card in self.cards_on_table:
             card.hide()
+
+    # Hide other player's cards (end of the turn)
+    def hide_players_cards(self):
+        current_player = self.players[self.current_player_index]
+        for player in self.players:
+            if player is current_player:
+                continue
+            player.hide_own_cards()
+
+    # Show player's Cards (but no current player playing the turn)
+    def display(self):
+        current_player = self.players[self.current_player_index]
+        for player in self.players:
+            if player is current_player:
+                continue
+            player.display()
         
