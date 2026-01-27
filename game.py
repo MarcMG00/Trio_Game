@@ -77,7 +77,7 @@ class Game:
             elif choice == "2":
                 self.ask_card_another_player(current_player)
             elif choice == "3":
-                print("3 - TODO")
+                self.flip_own_card(current_player)
             else:
                 print("Opción inválida.")
 
@@ -85,10 +85,10 @@ class Game:
             self.display()
 
             # Check if current Cards revealed allows to player to get a Trio
-            self.player_got_trio(current_player)
+            self.apply_trio(current_player)
 
             # Turn ends if current player hasn't got same numbers when choosing OR if has scored
-            if self.has_same_numbers(current_player) is False or current_player.has_scored_current_turn:
+            if not self.can_still_be_trio or current_player.has_scored_current_turn:
                 self.hide_cards_on_table()
                 self.hide_players_cards()
                 self.numbers_revealed_on_current_turn = []
@@ -130,10 +130,20 @@ class Game:
         option = int(input("Opción : "))
 
         # Reveal Card from player chosen
-        self.reveal_card_other_player(player_to_ask, option)
+        self.reveal_card_other_player(player_to_ask, option, False)
 
         return
     
+    # Option 3 - Flip own Card
+    def flip_own_card(self, current_player):
+        print(f"1 - Carta menos alta | 2 - Carta más alta : ")
+        option = int(input("Opción : "))
+
+        # Reveal Card from current player
+        self.reveal_card_other_player(current_player, option, True)
+
+        return
+
     # Get player to ask a Card
     def get_player(self, current_player):
         # Show players available
@@ -162,30 +172,44 @@ class Game:
                 print("Entrada inválida. Introduce un número.")
 
     # Reveal a card from player chosen
-    def reveal_card_other_player(self, player_to_ask, option):
-        card_revealed = player_to_ask.reveal_card(option)
+    def reveal_card_other_player(self, player_to_ask, option, is_current_player):
+        card_revealed = player_to_ask.reveal_card(option, is_current_player)
         # Put value from card revealed on list to compare
         self.numbers_revealed_on_current_turn.append(card_revealed.value)
 
-    # Check if numbers revealed during current turn are the same
-    def has_same_numbers(self, player) -> bool:
-        # Set removes duplicateds letting only one number => so if there are 2 numbers and returns 1, it means that those numbers are the same
-        all_same  = len(set(self.numbers_revealed_on_current_turn)) == 1
+    # Get if current player can still ask for Cards (and do a trio)
+    def can_still_be_trio(self) -> bool:
+        nums = self.numbers_revealed_on_current_turn
 
-        # Set player has score if 3 Cards are the same
-        if len(self.numbers_revealed_on_current_turn) == 3 and all_same:
-            player.has_scored_current_turn = True
+        if len(nums) <= 1:
             return True
 
-        # Otherwise, returns if current list has the same numbers
-        return all_same
+        return len(set(nums)) == 1
     
-    # Set if player got a trio of numbers
-    def player_got_trio(self, player):
-        # Set player has score if 3 Cards are the same
-        if self.has_same_numbers(player) and len(self.numbers_revealed_on_current_turn) == 3:
-            player.nb_trios += 1
-            player.has_scored_current_turn = True
+    # Check if got a trio
+    def apply_trio(self, player):
+        trio_num = self.trio_number()
+
+        if trio_num is None:
+            return
+
+        player.nb_trios += 1
+        player.has_scored_current_turn = True
+
+        # Condition to get the victory
+        if player.nb_trios == 3 or trio_num == 7:
+            player.is_winner = True
+
+    # Get the number from the trio
+    def trio_number(self) -> int | None:
+        if self.is_trio():
+            return self.numbers_revealed_on_current_turn[0]
+        return None
+    
+    # Get if is a trio
+    def is_trio(self) -> bool:
+        nums = self.numbers_revealed_on_current_turn
+        return len(nums) == 3 and len(set(nums)) == 1
 
     # Get Card asked from table
     def ask_position(self, cards_list):

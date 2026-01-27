@@ -13,9 +13,14 @@ class Player:
             self.cards.append(deck.draw())
 
     # Reveal Card (show the lower:1 or the higher:2)
-    def reveal_card(self, position_card: int):
+    def reveal_card(self, position_card: int, is_current_player: bool):
         # Filters Cards not discarded
-        available_cards = [c for c in self.cards if not c.discarded and not c.revealed]
+        available_cards = None
+        if not is_current_player:
+            available_cards = [c for c in self.cards if not c.discarded and not c.revealed]
+        else:
+            available_cards = [c for c in self.cards if not c.discarded]
+            
         card = None
         if position_card == 1:
             card = available_cards[0]
