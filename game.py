@@ -83,7 +83,7 @@ class Game:
                 print("Opción inválida.")
 
             # Show other player's Cards (to show new Card revealed if a player was asked)
-            self.display()
+            self.display_other_players()
 
             # Check if current Cards revealed allows to player to get a Trio
             self.apply_trio(current_player)
@@ -103,50 +103,63 @@ class Game:
         # Next player
         self.next_player()
 
-    # Pass to next player (next index)
-    def next_player(self):
-        self.current_player_index = (self.current_player_index + 1) % len(self.players)
-
     # Option 1 - Flip a Card from table
     def flip_card_on_table(self):
         print("Elige una posición :")
-        index_card = self.ask_position(self.cards_on_table)
+        index = self.ask_position(self.cards_on_table)
+        card = self.cards_on_table[index]
 
-        card_to_reveal = self.cards_on_table[index_card]
-        self.numbers_revealed_on_current_turn.append(card_to_reveal.value)
+        card.reveal()
+        self.add_revealed_number(card.value)
 
-        # Show again all Cards on table
-        card_to_reveal.reveal()
-        available_cards = [c for c in self.cards_on_table if not c.discarded]
-        row_str = " | ".join(str(card) for card in available_cards)
-        print(f"{row_str}")
+        self.display_table_cards()
 
         return
     
+    # Get Card asked from table
+    def ask_position(self, cards_list):
+        # Filters Cards not discarded
+        available_cards = [c for c in cards_list if not c.discarded]
+        row_str = " | ".join(str(card) for card in available_cards)
+        print(f"{row_str}")
+
+        while True:
+            try:
+                index_card = int(input("Posición de la carta :")) - 1
+
+                if not (0 <= index_card < len(available_cards)):
+                    print(f"Fuera de rango. Elige un número entre 1 y {len(available_cards)}.")
+                    continue
+
+                card = available_cards[index_card]
+
+                if card.revealed:
+                    print("Esa carta está revelada. Elige otra.")
+                    continue
+
+                if card.discarded:
+                    print("Esa carta está descartada. Elige otra.")
+                    continue
+
+                return index_card
+
+            except ValueError:
+                print("Entrada inválida. Introduce un número.")
+
+    # Display Cards on table
+    def display_table_cards(self):
+        available_cards = [c for c in self.cards_on_table if not c.discarded]
+        print(" | ".join(str(card) for card in available_cards))
+
     # Option 2 - Ask a Card to another player
     def ask_card_another_player(self, current_player):
         print(f"Elige un jugador a quien pedir una carta :")
         
-        player_to_ask = self.get_player(current_player)
-
-        print(f"1 - Carta menos alta | 2 - Carta más alta : ")
-        option = int(input("Opción : "))
-
-        # Reveal Card from player chosen
-        self.reveal_card_other_player(player_to_ask, option, False)
+        player = self.get_player(current_player)
+        self.ask_and_reveal_card(player, is_current_player=False)
 
         return
     
-    # Option 3 - Flip own Card
-    def flip_own_card(self, current_player):
-        print(f"1 - Carta menos alta | 2 - Carta más alta : ")
-        option = int(input("Opción : "))
-
-        # Reveal Card from current player
-        self.reveal_card_other_player(current_player, option, True)
-
-        return
-
     # Get player to ask a Card
     def get_player(self, current_player):
         # Show players available
@@ -174,11 +187,18 @@ class Game:
             except ValueError:
                 print("Entrada inválida. Introduce un número.")
 
-    # Reveal a card from player chosen
-    def reveal_card_other_player(self, player_to_ask, option, is_current_player):
-        card_revealed = player_to_ask.reveal_card(option, is_current_player)
-        # Put value from card revealed on list to compare
-        self.numbers_revealed_on_current_turn.append(card_revealed.value)
+    # Option 3 - Flip own Card
+    def flip_own_card(self, current_player):
+        self.ask_and_reveal_card(current_player, is_current_player=True)
+
+        return
+
+    def ask_and_reveal_card(self, player, is_current_player):
+        print("1 - Carta menos alta | 2 - Carta más alta : ")
+        option = int(input("Opción : "))
+
+        card = player.reveal_card(option, is_current_player)
+        self.add_revealed_number(card.value)
 
     # Get if current player can still ask for Cards (and do a trio)
     def can_still_be_trio(self) -> bool:
@@ -215,36 +235,6 @@ class Game:
         nums = self.numbers_revealed_on_current_turn
         return len(nums) == 3 and len(set(nums)) == 1
 
-    # Get Card asked from table
-    def ask_position(self, cards_list):
-        # Filters Cards not discarded
-        available_cards = [c for c in cards_list if not c.discarded]
-        row_str = " | ".join(str(card) for card in available_cards)
-        print(f"{row_str}")
-
-        while True:
-            try:
-                index_card = int(input("Posición de la carta :")) - 1
-
-                if not (0 <= index_card < len(available_cards)):
-                    print(f"Fuera de rango. Elige un número entre 1 y {len(available_cards)}.")
-                    continue
-
-                card = available_cards[index_card]
-
-                if card.revealed:
-                    print("Esa carta está revelada. Elige otra.")
-                    continue
-
-                if card.discarded:
-                    print("Esa carta está descartada. Elige otra.")
-                    continue
-
-                return index_card
-
-            except ValueError:
-                print("Entrada inválida. Introduce un número.")
-
     # Hide again all Cards on the table (end of the turn)
     def hide_cards_on_table(self):
         for card in self.cards_on_table:
@@ -259,10 +249,22 @@ class Game:
             player.hide_own_cards()
 
     # Show player's Cards (but no current player playing the turn)
-    def display(self):
+    def display_other_players(self):
         current_player = self.players[self.current_player_index]
         for player in self.players:
             if player is current_player:
                 continue
             player.display()
+
+    # Pass to next player (next index)
+    def next_player(self):
+        self.current_player_index = (self.current_player_index + 1) % len(self.players)
+
+    # Add revealed number from option to list
+    def add_revealed_number(self, value: int):
+        self.numbers_revealed_on_current_turn.append(value)
+
+    # Clear numbers revealed from list
+    def reset_revealed_numbers(self):
+        self.numbers_revealed_on_current_turn.clear()
         
