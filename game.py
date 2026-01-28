@@ -44,8 +44,9 @@ class Game:
 
         while True:
             # Game ends when a player is winner (has 3 trios or 1 trio of 7s)
-            if any(player.is_winner for player in self.players):
-                print("\nFin de la partida -- TODO >>> jugador X ganó la partida")
+            winner = next((p for p in self.players if p.is_winner), None)
+            if winner:
+                print(f"\nFin de la partida — ¡El jugador {winner.number} ganó la partida!")
                 return
 
             self.play_turn()
@@ -88,13 +89,15 @@ class Game:
             self.apply_trio(current_player)
 
             # Turn ends if current player hasn't got same numbers when choosing OR if has scored
-            if not self.can_still_be_trio or current_player.has_scored_current_turn:
+            if not self.can_still_be_trio() or current_player.has_scored_current_turn:
                 self.hide_cards_on_table()
                 self.hide_players_cards()
                 self.numbers_revealed_on_current_turn = []
+                print("------------Continue turn------------")
                 break
 
-        print("------------End------------")
+        print("------------End turn------------")
+        # print(f"[DEBUG] números de tríos: {current_player.nb_trios}")
         # Hide current player Cards
         current_player.hide_own_cards()
         # Next player
@@ -181,6 +184,7 @@ class Game:
     def can_still_be_trio(self) -> bool:
         nums = self.numbers_revealed_on_current_turn
 
+        # print(f"[DEBUG] números revelados: {nums}")
         if len(nums) <= 1:
             return True
 

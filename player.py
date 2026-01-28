@@ -17,17 +17,18 @@ class Player:
         # Filters Cards not discarded
         available_cards = None
         if not is_current_player:
-            available_cards = [c for c in self.cards if not c.discarded and not c.revealed]
+            available_cards = [c for c in self.cards if not c.discarded and not c.revealed and not c.already_taken_by_player]
         else:
-            available_cards = [c for c in self.cards if not c.discarded]
+            available_cards = [c for c in self.cards if not c.discarded and not c.already_taken_by_player]
             
         card = None
         if position_card == 1:
             card = available_cards[0]
-            card.reveal()
         else:
             card = available_cards[-1]
-            card.reveal()
+
+        card.reveal()
+        card.taken()
         
         return card
 
